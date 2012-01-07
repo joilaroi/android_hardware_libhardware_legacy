@@ -586,7 +586,7 @@ int wifi_start_supplicant()
     /* The ar6k driver needs the interface up in order to scan! */
     if (!strncmp(DRIVER_MODULE_NAME, "ar6000", 6)) {
         ifc_init();
-        ifc_up("wlan0");
+        ifc_up("eth0");
         sleep(1);
     }
 
