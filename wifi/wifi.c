@@ -45,28 +45,42 @@ extern void get_dhcp_info();
 extern int init_module(void *, unsigned long, const char *);
 extern int delete_module(const char *, unsigned int);
 
+extern void huawei_oem_rapi_streaming_function(int n, int p1, int p2, int p3, char *v1, int *v2, int *v3);
+
 static char iface[PROPERTY_VALUE_MAX];
 // TODO: use new ANDROID_SOCKET mechanism, once support for multiple
 // sockets is in
 
 #ifndef WIFI_DRIVER_MODULE_PATH
-#define WIFI_DRIVER_MODULE_PATH         "/system/lib/modules/wlan.ko"
+#define WIFI_DRIVER_MODULE_PATH         "/system/lib/modules/ar6000.ko"
 #endif
 #ifndef WIFI_DRIVER_MODULE_NAME
-#define WIFI_DRIVER_MODULE_NAME         "wlan"
+#define WIFI_DRIVER_MODULE_NAME         "eth"
 #endif
 #ifndef WIFI_DRIVER_MODULE_ARG
 #define WIFI_DRIVER_MODULE_ARG          ""
 #endif
 #ifndef WIFI_FIRMWARE_LOADER
-#define WIFI_FIRMWARE_LOADER		""
+#define WIFI_FIRMWARE_LOADER            ""
 #endif
 #ifndef WIFI_PRE_LOADER
-#define WIFI_PRE_LOADER		""
+#define WIFI_PRE_LOADER                 ""
 #endif
-#define WIFI_TEST_INTERFACE		"sta"
+#ifndef WIFI_AP_DRIVER_MODULE_NAME
+#define WIFI_AP_DRIVER_MODULE_NAME      "tiap_drv"
+#endif
+#ifndef WIFI_AP_DRIVER_MODULE_PATH
+#define WIFI_AP_DRIVER_MODULE_PATH      "/system/lib/modules/tiap_drv.ko"
+#endif
+#ifndef WIFI_AP_DRIVER_MODULE_ARG
+#define WIFI_AP_DRIVER_MODULE_ARG       ""
+#endif
+#ifndef WIFI_AP_FIRMWARE_LOADER
+#define WIFI_AP_FIRMWARE_LOADER         "wlan_ap_loader"
+#endif
+#define WIFI_TEST_INTERFACE             "sta"
 
-#define WIFI_DRIVER_LOADER_DELAY	1000000
+#define WIFI_DRIVER_LOADER_DELAY    1000000
 
 static const char IFACE_DIR[]           = "/data/system/wpa_supplicant";
 static const char DRIVER_MODULE_NAME[]  = WIFI_DRIVER_MODULE_NAME;
@@ -82,11 +96,11 @@ static const char SUPP_CONFIG_FILE[]    = "/data/misc/wifi/wpa_supplicant.conf";
 static const char MODULE_FILE[]         = "/proc/modules";
 static const char PRELOADER[]           = WIFI_PRE_LOADER;
 
-static const char AP_DRIVER_MODULE_NAME[]  = "tiap_drv";
-static const char AP_DRIVER_MODULE_TAG[]   = "tiap_drv" " ";
-static const char AP_DRIVER_MODULE_PATH[]  = "/system/lib/modules/tiap_drv.ko";
-static const char AP_DRIVER_MODULE_ARG[]   = "";
-static const char AP_FIRMWARE_LOADER[]     = "wlan_ap_loader";
+static const char AP_DRIVER_MODULE_NAME[]  = WIFI_AP_DRIVER_MODULE_NAME;
+static const char AP_DRIVER_MODULE_TAG[]   = WIFI_AP_DRIVER_MODULE_NAME " ";
+static const char AP_DRIVER_MODULE_PATH[]  = WIFI_AP_DRIVER_MODULE_PATH;
+static const char AP_DRIVER_MODULE_ARG[]   = WIFI_AP_DRIVER_MODULE_ARG;
+static const char AP_FIRMWARE_LOADER[]     = WIFI_AP_FIRMWARE_LOADER;
 static const char AP_DRIVER_PROP_NAME[]    = "wlan.ap.driver.status";
 
 #ifdef WIFI_EXT_MODULE_NAME
@@ -208,11 +222,14 @@ out:
 
 /* end rfkill support */
 
-static int insmod(const char *filename, const char *args)
+static int insmod(const char *filename,const char *args)
 {
     void *module;
     unsigned int size;
     int ret;
+    char x[8];
+    int  y;
+    char mac_param[64];
 
     /* Use rfkill if "module" is 'rfkill' */
     if (!strncmp(DRIVER_MODULE_PATH, "rfkill", 6)) {
@@ -223,7 +240,17 @@ static int insmod(const char *filename, const char *args)
     if (!module)
         return -1;
 
-    ret = init_module(module, size, args);
+    if(strstr(filename,"ar6000.ko")) {
+        memset(x,0,8);
+	y=0;
+	huawei_oem_rapi_streaming_function(3,0,0,0,0,&y,x);
+        LOGI("huawei_oem_rapi_streaming_function %p %x %x",x,x[0],y);
+	sprintf(mac_param,"mac_param=%02X:%02X:%02X:%02X:%02X:%02X ",x[5],x[4],x[3],x[2],x[1],x[0]);
+        LOGI("Got MAC Address: %s ",mac_param);
+        ret = init_module(module, size, mac_param);
+    } else { 
+        ret = init_module(module, size, args);
+    }
 
     free(module);
 
@@ -772,3 +799,4 @@ int wifi_command(const char *command, char *reply, size_t *reply_len)
 {
     return wifi_send_command(ctrl_conn, command, reply, reply_len);
 }
+
