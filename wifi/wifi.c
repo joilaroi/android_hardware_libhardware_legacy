@@ -55,7 +55,7 @@ static char iface[PROPERTY_VALUE_MAX];
 #define WIFI_DRIVER_MODULE_PATH         "/system/lib/modules/ar6000.ko"
 #endif
 #ifndef WIFI_DRIVER_MODULE_NAME
-#define WIFI_DRIVER_MODULE_NAME         "eth"
+#define WIFI_DRIVER_MODULE_NAME         "ar6000"
 #endif
 #ifndef WIFI_DRIVER_MODULE_ARG
 #define WIFI_DRIVER_MODULE_ARG          ""
@@ -80,7 +80,7 @@ static char iface[PROPERTY_VALUE_MAX];
 #endif
 #define WIFI_TEST_INTERFACE             "sta"
 
-#define WIFI_DRIVER_LOADER_DELAY    1000000
+#define WIFI_DRIVER_LOADER_DELAY	1000000
 
 static const char IFACE_DIR[]           = "/data/system/wpa_supplicant";
 static const char DRIVER_MODULE_NAME[]  = WIFI_DRIVER_MODULE_NAME;
@@ -135,7 +135,7 @@ static int init_rfkill() {
         }
         sz = read(fd, &buf, sizeof(buf));
         close(fd);
-        if (sz >= 4 && memcmp(buf, "wlan", 4) == 0) {
+        if (sz >= 4 && memcmp(buf, "eth", 4) == 0) {
             rfkill_id = id;
             break;
         }
@@ -799,4 +799,5 @@ int wifi_command(const char *command, char *reply, size_t *reply_len)
 {
     return wifi_send_command(ctrl_conn, command, reply, reply_len);
 }
+
 
